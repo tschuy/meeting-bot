@@ -1,20 +1,3 @@
-/**
- * Welcome to Cloudflare Workers!
- *
- * This is a template for a Scheduled Worker: a Worker that can run on a
- * configurable interval:
- * https://developers.cloudflare.com/workers/platform/triggers/cron-triggers/
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Run `curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"` to see your Worker in action
- * - Run `npm run deploy` to publish your Worker
- *
- * Bind resources to your Worker in `wrangler.jsonc`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
-
 import { fetchUpcomingLegistarMeetings } from './query';
 
 const agencies = {
@@ -36,10 +19,10 @@ function generateAllMeetingSummary(agencies, meetings) {
     message = message.concat("*", agencies[agency].name, "*: \n")
     for (const meeting of meetings[agency]) {
       message = message.concat(`* ${meeting.date} ${meeting.time} - ${meeting.name}`);
-      if (meeting.accessibleAgenda.startsWith('http')) {
-        message = message.concat(` - <${meeting.accessibleAgenda}|View agenda>\n`);
+      if (meeting.agenda.startsWith('http')) {
+        message = message.concat(` - <${meeting.agenda}|View agenda>\n`);
       } else {
-        message = message.concat(` - ${meeting.accessibleAgenda}\n`);
+        message = message.concat(` - ${meeting.agenda}\n`);
       }
     }
     if (meetings[agency].length === 0) {
@@ -79,20 +62,19 @@ async function processAndSend(env): Promise<string> {
 
   let agencyMeetings = {};
   for (let [key, agency] of Object.entries(agencies)) {
-    agencyMeetings[key] = await fetchUpcomingLegistarMeetings(agency.url);
+    agencyMeetings[key] = await fetchUpcomingLegistarMeetings(key, agency.url);
   }
   console.log(JSON.stringify(agencyMeetings, null, 2));
 
-  try {
-    const response = await postToSlack(env.SLACK_BOT_TOKEN, env.CHANNEL_ID, generateAllMeetingSummary(agencies, agencyMeetings));
-    console.log("Message sent successfully:", response.ts);
-    return response.ts;
-  } catch (error: any) {
-    console.error("Error sending message:", error.data?.error || error.message);
-    return error.data?.error || error.message;
-  };
+  // try {
+  //   const response = await postToSlack(env.SLACK_BOT_TOKEN, env.CHANNEL_ID, generateAllMeetingSummary(agencies, agencyMeetings));
+  //   console.log("Message sent successfully:", response.ts);
+  //   return response.ts;
+  // } catch (error: any) {
+  //   console.error("Error sending message:", error.data?.error || error.message);
+  //   return error.data?.error || error.message;
+  // };
 }
- 
 
 export default {
 	async fetch(req, env) {
@@ -100,8 +82,6 @@ export default {
     return new Response("Sent message!");
 	},
 
-	// The scheduled handler is invoked at the interval set in our wrangler.jsonc's
-	// [[triggers]] configuration.
 	async scheduled(event, env, ctx): Promise<void> {
     const result = await processAndSend(env);
 		console.log(`trigger fired at ${event.cron}: ${result}`);

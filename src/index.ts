@@ -66,14 +66,14 @@ async function processAndSend(env): Promise<string> {
   }
   console.log(JSON.stringify(agencyMeetings, null, 2));
 
-  // try {
-  //   const response = await postToSlack(env.SLACK_BOT_TOKEN, env.CHANNEL_ID, generateAllMeetingSummary(agencies, agencyMeetings));
-  //   console.log("Message sent successfully:", response.ts);
-  //   return response.ts;
-  // } catch (error: any) {
-  //   console.error("Error sending message:", error.data?.error || error.message);
-  //   return error.data?.error || error.message;
-  // };
+  try {
+    const response = await postToSlack(env.SLACK_BOT_TOKEN, env.CHANNEL_ID, generateAllMeetingSummary(agencies, agencyMeetings));
+    console.log("Message sent successfully:", response.ts);
+    return response.ts;
+  } catch (error: any) {
+    console.error("Error sending message:", error.data?.error || error.message);
+    return error.data?.error || error.message;
+  };
 }
 
 export default {
